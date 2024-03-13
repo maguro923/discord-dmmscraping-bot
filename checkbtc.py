@@ -17,7 +17,7 @@ def scraping(url):
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
     driver.get(url)
     print("accessnow...")
-    time.sleep(3)
+    time.sleep(1)
     amount = driver.find_elements(By.CLASS_NAME,"c-tradeRate__trade__jpy__amount")
     amount_decimal = driver.find_elements(By.CLASS_NAME,"c-tradeRate__trade__jpy__amount_decimal")
     print(amount[0].text + amount_decimal[0].text)
