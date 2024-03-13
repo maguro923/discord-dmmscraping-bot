@@ -1,8 +1,8 @@
 import asyncio
 import discord
 import discord.app_commands
-import DiscordData.token as TokenData """DiscordDataディレクトリ配下にtoken.pyを作成し、TOKEN=あなたのトークン として記述してください """
-import DiscordData.channel as ChannelData"""DiscordDataディレクトリ配下にchannel.pyを作成し、CHANNEL_ID=あなたのサーバーのチャンネル として入力して下さい"""
+import DiscordData.token as TokenData
+import DiscordData.channel as ChannelData
 import DiscordData.DataAccess as DataAccess
 import random
 import time
