@@ -27,7 +27,7 @@ async def bot_status():
                 url = URL.format(COMMAND[j])
                 command = ["python3","checkbtc.py",url,"{}_send.txt".format(COMMAND[j])]
                 proc = subprocess.Popen(command)
-                await asyncio.sleep(30)
+                await asyncio.sleep(20)
             await asyncio.sleep(600-len(COMMAND)*30)
         print("status: OK")
         await send_status(channel,"status","OK",0x00ff00)
