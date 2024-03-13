@@ -22,7 +22,7 @@ command_list = DataAccess.command_list
 async def bot_status():
     channel=client.get_channel(CHANNEL_ID)
     while True:
-        for i in range(12):
+        for i in range(6):
             for j in range(len(COMMAND)):
                 url = URL.format(COMMAND[j])
                 command = ["python3","checkbtc.py",url,"{}_send.txt".format(COMMAND[j])]
