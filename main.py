@@ -121,6 +121,23 @@ async def dmm_selenium(message):
             await now_embed_send(amount,message,"{}/JPY リアルタイムレート".format(COMMAND[i].upper()))
             print("command: {} OK".format(message.content))
 
+async def dmm_order(message,orders):
+    if orders[0] == "ask" and len(orders) == 3:
+        #目標買値設定
+        print("command: /dmm ask")
+
+    elif orders[0] == "ask" and not len(orders) == 3:
+        #引数の数が正しくない
+        print("”/dmm ask” の引数は add 対象 目標買値 です")
+
+    elif orders[0] == "bid" and len(orders):
+        #目標売値設定
+        print("command: /dmm bid")
+    
+    elif orders[0] == "bid" and not len(orders) == 3:
+        #引数の数が正しくない
+        print("”/dmm bid” の引数は add 対象 目標売値 です")
+
 async def now_embed_send(amount,message,titlename):
     connected = discord.Embed(
         title = titlename,
@@ -156,6 +173,9 @@ async def on_message(message):
     elif message.content == "/kill-process":
         await send_status(message.channel,"ログ","Botを切断しました",0xff0000)
         exit()
+    elif str(message.content).startswith("/dmm"):
+        sended_text = str(message.content).removeprefix("/dmm ").split()
+        await dmm_order(message,sended_text)
     elif str(message.content).startswith("/add ") or str(message.content).startswith("/del "):
         x = str(message.content).split(" ")
         await command_reload(message,x[0].lstrip("/"),x[1])
