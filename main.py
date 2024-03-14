@@ -18,7 +18,7 @@ PATH = "send/{}_send.txt"
 URL = "https://bitcoin.dmm.com/trade_chart_rate_list/{}-jpy"
 COMMAND = Command.COMMAND
 command_list = CommandList.command_list
-#tree = discord.app_commands.CommandTree(client)
+status_send = False
 
 async def bot_status():
     channel=client.get_channel(CHANNEL_ID)
@@ -31,7 +31,14 @@ async def bot_status():
                 await asyncio.sleep(20)
             await asyncio.sleep(600-len(COMMAND)*30)
         print("status: OK")
-        await send_status(channel,"status","OK",0x00ff00)
+        if status_send:
+            await send_status(channel,"status","OK",0x00ff00)
+
+async def goal_setting(message,orders):
+    if orders[0] == "ask":
+        print(" ")
+    else:
+        print(" ")
 
 async def command_write(command):
     await asyncio.sleep(1)
@@ -122,21 +129,39 @@ async def dmm_selenium(message):
             print("command: {} OK".format(message.content))
 
 async def dmm_order(message,orders):
-    if orders[0] == "ask" and len(orders) == 3:
-        #目標買値設定
-        print("command: /dmm ask")
 
-    elif orders[0] == "ask" and not len(orders) == 3:
+    if orders[0] == "ask" and not len(orders) == 3:
         #引数の数が正しくない
         print("”/dmm ask” の引数は add 対象 目標買値 です")
+        await message.channel.send("”/dmm ask” の引数は ask 対象 目標買値 です")
+
+    elif orders[0] == "bid" and not len(orders) == 3:
+        #引数の数が正しくない
+        print("”/dmm bid” の引数は bid 対象 目標売値 です")
+        await message.channel.send("”/dmm bid” の引数は bid 対象 目標売値 です")
+
+    elif not isint(orders[2]):
+        print("引数の型が間違っています")
+        await message.channel.send("引数の型が間違っています")
+
+    elif orders[0] == "ask" and len(orders) == 3:
+        #目標買値設定
+        print("command: /dmm ask")
+        await goal_setting(message,orders)
 
     elif orders[0] == "bid" and len(orders):
         #目標売値設定
         print("command: /dmm bid")
-    
-    elif orders[0] == "bid" and not len(orders) == 3:
-        #引数の数が正しくない
-        print("”/dmm bid” の引数は add 対象 目標売値 です")
+        await goal_setting(message,orders)
+
+def isint(s):
+    try:
+        int(s, 10)
+    except ValueError:
+        return False
+    else:
+        return True
+
 
 async def now_embed_send(amount,message,titlename):
     connected = discord.Embed(
