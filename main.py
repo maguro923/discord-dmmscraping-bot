@@ -35,7 +35,7 @@ async def bot_status():
 
 async def command_write(command):
     await asyncio.sleep(1)
-    data = open("DiscordData/command_list.py")
+    data = open("DiscordData/command.py")
     data_list = data.readlines()
     data.close()
     command_index = data_list[0].find("[")
@@ -46,7 +46,7 @@ async def command_write(command):
         if not i+1 == len(command):
             data_list[0] += ","
     data_list[0] += "]\n"
-    data = open("DiscordData/command_list.py",mode="w")
+    data = open("DiscordData/command.py",mode="w")
     data.writelines(data_list)
     os.fdatasync(data.fileno())
     data.close()
@@ -162,7 +162,7 @@ async def on_message(message):
     elif message.content == "/show-command":
 #        await command_show(message)
         x = "\n".join(COMMAND)
-        y = "\n".join(command_list)
+        y = ",".join(command_list)
         await message.channel.send("現在有効化されたコマンドは\n"+x+"\nコマンド一覧は\n"+y)
     else:
         asyncio.ensure_future(dmm_selenium(message))
