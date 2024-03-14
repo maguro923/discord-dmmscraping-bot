@@ -2,3 +2,4 @@ __pycache__/
 *_send.txt
 token.py
 channel.py
+command.py

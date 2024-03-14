@@ -3,7 +3,8 @@ import discord
 import discord.app_commands
 import DiscordData.token as TokenData
 import DiscordData.channel as ChannelData
-import DiscordData.DataAccess as DataAccess
+import DiscordData.command as Command
+import DiscordData.command_list as CommandList
 import random
 import time
 import subprocess
@@ -15,8 +16,8 @@ client = discord.Client(intents=discord.Intents.all())
 CHANNEL_ID = ChannelData.CHANNEL_ID
 PATH = "send/{}_send.txt"
 URL = "https://bitcoin.dmm.com/trade_chart_rate_list/{}-jpy"
-COMMAND = DataAccess.COMMAND
-command_list = DataAccess.command_list
+COMMAND = Command.COMMAND
+command_list = CommandList.command_list
 #tree = discord.app_commands.CommandTree(client)
 
 async def bot_status():
@@ -34,7 +35,7 @@ async def bot_status():
 
 async def command_write(command):
     await asyncio.sleep(1)
-    data = open("DiscordData/DataAccess.py")
+    data = open("DiscordData/command_list.py")
     data_list = data.readlines()
     data.close()
     command_index = data_list[0].find("[")
@@ -45,7 +46,7 @@ async def command_write(command):
         if not i+1 == len(command):
             data_list[0] += ","
     data_list[0] += "]\n"
-    data = open("DiscordData/DataAccess.py",mode="w")
+    data = open("DiscordData/command_list.py",mode="w")
     data.writelines(data_list)
     os.fdatasync(data.fileno())
     data.close()
