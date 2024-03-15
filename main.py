@@ -10,7 +10,7 @@ import time
 import subprocess
 import os
 import sys
-import pickle
+import dill
 
 TOKEN = TokenData.TOKEN
 client = discord.Client(intents=discord.Intents.all())
@@ -42,16 +42,21 @@ async def bot_status():
             await send_status(channel,"status","OK",0x00ff00)
 
 async def amount_check(command):
-    ask_amount_data = len(ask_goal[command])
     amount = res_get(PATH.format(command))
     amount[0] = float(amount[0].replace(",",""))
     amount[1] = float(amount[1].replace(",",""))
     for i in range(len(bid_goal[command])):
         if amount[0] >= bid_goal[command][i][0]:
             await bid_goal[command][i][1].channel.send(str(bid_goal[command][i][1].author.mention)+"\n"+"{} の売値が {} 円を上回りました\n現在売値 {} 円".format(command,bid_goal[command][i][0],amount[0]))
+            with open("bid_goal","wb") as f:
+                dill.dump(bid_goal,f)
+            print("dump: OK")
     for i in range(len(ask_goal[command])):
         if amount[1] <= ask_goal[command][i][0]:
             await ask_goal[command][i][1].channel.send(str(ask_goal[command][i][1].author.mention)+"\n"+"{} の買値が {} 円を下回りました\n現在買値 {} 円".format(command,ask_goal[command][i][0],amount[1]))
+            with open("ask_goal","wb") as f:
+                dill.dump(ask_goal,f)
+            print("dump: OK")
 
 #bid_goal初期化したい
 #ask_goal初期化したい
@@ -166,13 +171,13 @@ async def dmm_order(message,orders):
 
     if orders[0] == "ask" and not len(orders) == 3:
         #引数の数が正しくない
-        print("”/dmm ask” の引数は add 対象 目標買値 です")
-        await message.channel.send("”/dmm ask” の引数は ask 対象 目標買値 です")
+        print("”/ask” の引数は add 対象 目標買値 です")
+        await message.channel.send("”/ask” の引数は ask 対象 目標買値 です")
 
     elif orders[0] == "bid" and not len(orders) == 3:
         #引数の数が正しくない
-        print("”/dmm bid” の引数は bid 対象 目標売値 です")
-        await message.channel.send("”/dmm bid” の引数は bid 対象 目標売値 です")
+        print("”/bid” の引数は bid 対象 目標売値 です")
+        await message.channel.send("”/bid” の引数は bid 対象 目標売値 です")
 
     elif (orders[0]=="ask" or orders[0]=="bid") and not isfloat(orders[2]):
         print("引数の型が間違っています")
@@ -230,10 +235,10 @@ async def on_message(message):
     elif message.content == "/kill-process":
         await send_status(message.channel,"ログ","Botを切断しました",0xff0000)
         exit()
-    elif str(message.content).startswith("/dmm"):
-        sended_text = str(message.content).removeprefix("/dmm ").split()
+    elif str(message.content).startswith("/"):
+        sended_text = str(message.content).removeprefix("/").split()
         await dmm_order(message,sended_text)
-    elif str(message.content).startswith("/add ") or str(message.content).startswith("/del "):
+    if str(message.content).startswith("/add ") or str(message.content).startswith("/del "):
         x = str(message.content).split(" ")
         await command_reload(message,x[0].lstrip("/"),x[1])
     elif message.content == "/show-command":
