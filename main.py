@@ -19,6 +19,11 @@ URL = "https://bitcoin.dmm.com/trade_chart_rate_list/{}-jpy"
 COMMAND = Command.COMMAND
 command_list = CommandList.command_list
 status_send = False
+ask_goal = {}
+bid_goal = {}
+for i in range(len(COMMAND)):
+    ask_goal[COMMAND[i]] = ["-1","-"]
+    bid_goal[COMMAND[i]] = ["-1","-"]
 
 async def bot_status():
     channel=client.get_channel(CHANNEL_ID)
@@ -28,17 +33,39 @@ async def bot_status():
                 url = URL.format(COMMAND[j])
                 command = ["python3","checkbtc.py",url,"{}_send.txt".format(COMMAND[j])]
                 proc = subprocess.Popen(command)
-                await asyncio.sleep(20)
-            await asyncio.sleep(600-len(COMMAND)*30)
+                await asyncio.sleep(30)
+                await amount_check(COMMAND[j])
+            await asyncio.sleep(max(600-len(COMMAND)*30,0))
         print("status: OK")
         if status_send:
             await send_status(channel,"status","OK",0x00ff00)
 
+async def amount_check(command):
+    amount = res_get(PATH.format(command))
+#amountの,を削除変換したい
+    if amount[0] >= bid_goal[command][0] and not bid_goal[command][0] == "-1":
+        print("amount_check: bid")
+        await bid_goal[command][1].channel.send(str(bid_goal[command][1].author.mention)+"{} の売値が {} を上回りました".format(command,bid_goal[command][0]))
+#bid_goal初期化したい
+
+    if amount[1] <= ask_goal[command][0] and not ask_goal[command][0] == "-1":
+        print("amount_check: ask")
+        await ask_goal[command][1].channel.send(str(ask_goal[command][1].author.mention)+"{} の買値が {} を下回りました".format(command,ask_goal[command][0]))
+#ask_goal初期化したい
+
 async def goal_setting(message,orders):
-    if orders[0] == "ask":
-        print(" ")
+    if orders[0] == "ask" and command_check("del",orders[1]):
+        print("command: /dmm ask")
+        ask_goal[orders[1]][0] = orders[2]
+        ask_goal[orders[1]][1] = message
+
+    elif orders[0] == "bid" and command_check("del",orders[1]):
+        print("command: /dmm bid")
+        bid_goal[orders[1]][0] = orders[2]
+        bid_goal[orders[1]][1] = message
+
     else:
-        print(" ")
+        print("{orders[1]} は無効な引数です。正しい引数を入力して下さい")
 
 async def command_write(command):
     await asyncio.sleep(1)
@@ -140,18 +167,16 @@ async def dmm_order(message,orders):
         print("”/dmm bid” の引数は bid 対象 目標売値 です")
         await message.channel.send("”/dmm bid” の引数は bid 対象 目標売値 です")
 
-    elif not isint(orders[2]):
+    elif (orders[0]=="ask" or orders[0]=="bid") and not isint(orders[2]):
         print("引数の型が間違っています")
         await message.channel.send("引数の型が間違っています")
 
     elif orders[0] == "ask" and len(orders) == 3:
         #目標買値設定
-        print("command: /dmm ask")
         await goal_setting(message,orders)
 
     elif orders[0] == "bid" and len(orders):
         #目標売値設定
-        print("command: /dmm bid")
         await goal_setting(message,orders)
 
 def isint(s):
