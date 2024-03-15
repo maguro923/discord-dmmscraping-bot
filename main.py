@@ -10,6 +10,7 @@ import time
 import subprocess
 import os
 import sys
+import pickle
 
 TOKEN = TokenData.TOKEN
 client = discord.Client(intents=discord.Intents.all())
@@ -22,8 +23,8 @@ status_send = False
 ask_goal = {}
 bid_goal = {}
 for i in range(len(COMMAND)):
-    ask_goal[COMMAND[i]] = ["-1","-"]
-    bid_goal[COMMAND[i]] = ["-1","-"]
+    ask_goal[COMMAND[i]] = []
+    bid_goal[COMMAND[i]] = []
 
 async def bot_status():
     channel=client.get_channel(CHANNEL_ID)
@@ -41,31 +42,37 @@ async def bot_status():
             await send_status(channel,"status","OK",0x00ff00)
 
 async def amount_check(command):
+    ask_amount_data = len(ask_goal[command])
     amount = res_get(PATH.format(command))
-#amountの,を削除変換したい
-    if amount[0] >= bid_goal[command][0] and not bid_goal[command][0] == "-1":
-        print("amount_check: bid")
-        await bid_goal[command][1].channel.send(str(bid_goal[command][1].author.mention)+"{} の売値が {} を上回りました".format(command,bid_goal[command][0]))
-#bid_goal初期化したい
+    amount[0] = float(amount[0].replace(",",""))
+    amount[1] = float(amount[1].replace(",",""))
+    for i in range(len(bid_goal[command])):
+        if amount[0] >= bid_goal[command][i][0]:
+            await bid_goal[command][i][1].channel.send(str(bid_goal[command][i][1].author.mention)+"\n"+"{} の売値が {} 円を上回りました\n現在売値 {} 円".format(command,bid_goal[command][i][0],amount[0]))
+    for i in range(len(ask_goal[command])):
+        if amount[1] <= ask_goal[command][i][0]:
+            await ask_goal[command][i][1].channel.send(str(ask_goal[command][i][1].author.mention)+"\n"+"{} の買値が {} 円を下回りました\n現在買値 {} 円".format(command,ask_goal[command][i][0],amount[1]))
 
-    if amount[1] <= ask_goal[command][0] and not ask_goal[command][0] == "-1":
-        print("amount_check: ask")
-        await ask_goal[command][1].channel.send(str(ask_goal[command][1].author.mention)+"{} の買値が {} を下回りました".format(command,ask_goal[command][0]))
+#bid_goal初期化したい
 #ask_goal初期化したい
 
 async def goal_setting(message,orders):
+    orders[2] = float(orders[2])
     if orders[0] == "ask" and command_check("del",orders[1]):
         print("command: /dmm ask")
-        ask_goal[orders[1]][0] = orders[2]
-        ask_goal[orders[1]][1] = message
+        x = [orders[2],message]
+        ask_goal[orders[1]].append(x)
+        await message.channel.send("{} の買値が {} 円を下回った場合に通知します".format(orders[1].upper(),orders[2]))
 
     elif orders[0] == "bid" and command_check("del",orders[1]):
         print("command: /dmm bid")
-        bid_goal[orders[1]][0] = orders[2]
-        bid_goal[orders[1]][1] = message
+        x = [orders[2],message]
+        bid_goal[orders[1]].append(x)
+        await message.channel.send("{} の売値が {} 円を上回った場合に通知します".format(orders[1].upper(),orders[2]))
 
     else:
-        print("{orders[1]} は無効な引数です。正しい引数を入力して下さい")
+        print("{} は無効な引数です。正しい引数を入力して下さい".format(orders[1]))
+        await message.channel.send("{} は無効な引数です。正しい引数を入力して下さい".format(orders[1]))
 
 async def command_write(command):
     await asyncio.sleep(1)
@@ -82,7 +89,7 @@ async def command_write(command):
     data_list[0] += "]\n"
     data = open("DiscordData/command.py",mode="w")
     data.writelines(data_list)
-    os.fdatasync(data.fileno())
+    os.fsync(data.fileno())
     data.close()
     print("command_write: OK")
 
@@ -167,7 +174,7 @@ async def dmm_order(message,orders):
         print("”/dmm bid” の引数は bid 対象 目標売値 です")
         await message.channel.send("”/dmm bid” の引数は bid 対象 目標売値 です")
 
-    elif (orders[0]=="ask" or orders[0]=="bid") and not isint(orders[2]):
+    elif (orders[0]=="ask" or orders[0]=="bid") and not isfloat(orders[2]):
         print("引数の型が間違っています")
         await message.channel.send("引数の型が間違っています")
 
@@ -179,9 +186,9 @@ async def dmm_order(message,orders):
         #目標売値設定
         await goal_setting(message,orders)
 
-def isint(s):
+def isfloat(s):
     try:
-        int(s, 10)
+        float(s)
     except ValueError:
         return False
     else:
