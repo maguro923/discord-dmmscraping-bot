@@ -25,15 +25,17 @@ bid_goal = {}
 for i in range(len(COMMAND)):
     ask_goal[COMMAND[i]] = []
     bid_goal[COMMAND[i]] = []
-if os.path.isfile("DiscordData/ask_goal"):
-    with open("DiscordData/ask_goal","rb") as f:
-        ask_goal = dill.load(f)
-        print("load: ask_goal\n",ask_goal,"\n",len(ask_goal["btc"]))
 
-if os.path.isfile("DiscordData/bid_goal"):
-    with open("DiscordData/bid_goal","rb") as f:
-        bid_goal = dill.load(f)
-        print("load: bid_goal")
+def goal_check():
+    if os.path.isfile("DiscordData/ask_goal"):
+        with open("DiscordData/ask_goal","rb") as f:
+            ask_goal = dill.load(f)
+            print("load: ask_goal\n",ask_goal,"\n",len(ask_goal["btc"]))
+
+    if os.path.isfile("DiscordData/bid_goal"):
+        with open("DiscordData/bid_goal","rb") as f:
+            bid_goal = dill.load(f)
+            print("load: bid_goal")
 
 async def bot_status():
     channel=client.get_channel(CHANNEL_ID)
@@ -44,6 +46,7 @@ async def bot_status():
                 command = ["python3","checkbtc.py",url,"{}_send.txt".format(COMMAND[j])]
                 proc = subprocess.Popen(command)
                 await asyncio.sleep(20)
+      
                 await amount_check(COMMAND[j])
             await asyncio.sleep(max(600-len(COMMAND)*30,0))
         print("status: OK")
@@ -55,20 +58,24 @@ async def amount_check(command):
     amount[0] = float(amount[0].replace(",",""))
     amount[1] = float(amount[1].replace(",",""))
     for i in range(len(bid_goal[command])):
+        if bid_goal[command][i][0] == "none":
+            continue
         if amount[0] >= bid_goal[command][i][0]:
             bid_goal_channel = client.get_channel(bid_goal[command][i][2])
             await bid_goal_channel.send("<@{}>\n{} の売値が {} 円を上回りました\n現在売値 {} 円".format(bid_goal[command][i][1],command,bid_goal[command][i][0],amount[0]))
-            del bid_goal[command][i]
-            with open("DiscordData/bid_goal","wb") as f:
-                dill.dump(bid_goal,f)
+#            with open("bid_goal","wb") as f:
+#                dill.dump(bid_goal,f)
+#                dill.dumps(bid_goal)
 #            print("dump: OK")
+    print(len(ask_goal[command]),"\n",ask_goal,"\n",command)
     for i in range(len(ask_goal[command])):
+        print("おけ")
+        if ask_goal[command][i][0] == "none":
+            continue
         if amount[1] <= ask_goal[command][i][0]:
-            ask_goal_channel = client.get_channel(ask_goal[command][i][2])
-            await ask_goal_channel.send("<@{}>\n{} の買値が {} 円を下回りました\n現在買値 {} 円".format(ask_goal[command][i][1],command,ask_goal[command][i][0],amount[1]))
-            del ask_goal[command][i]
-            with open("DiscordData/ask_goal","wb") as f:
-                dill.dump(ask_goal,f)
+            await client.get_channel(ask_goal[command][i][2]).send("<@{}>\n{} の買値が {} 円を下回りました\n現在買値 {} 円".format(ask_goal[command][i][1],command,ask_goal[command][i][0],amount[1]))
+#            with open("ask_goal","wb") as f:
+#                dill.dump(ask_goal,f)
 #            print("dump: OK")
 
 #bid_goal初期化したい
@@ -78,14 +85,16 @@ async def goal_setting(message,orders):
     orders[2] = float(orders[2])
     if orders[0] == "ask" and command_check("del",orders[1]):
         print("command: /dmm ask")
-        x = [orders[2],str(message.author.id),int(message.channel.id)]
+        x = [orders[2],str(message.author.id),str(message.channel.id)]
+#        x = [orders[2],str(message.channel),str(message.author)]
         ask_goal[orders[1]].append(x)
         await message.channel.send("{} の買値が {} 円を下回った場合に通知します".format(orders[1].upper(),orders[2]))
         with open("DiscordData/ask_goal","wb") as f:
             dill.dump(ask_goal,f)
     elif orders[0] == "bid" and command_check("del",orders[1]):
         print("command: /dmm bid")
-        x = [orders[2],str(message.author.id),int(message.channel.id)]
+        x = [orders[2],str(message.author.id),str(message.channel.id)]
+#        x = [orders[2],str(message.channel),star(message.author)]
         bid_goal[orders[1]].append(x)
         await message.channel.send("{} の売値が {} 円を上回った場合に通知します".format(orders[1].upper(),orders[2]))
         with open("DiscordData/bid_goal","wb") as f:
@@ -235,6 +244,7 @@ async def send_status(channel,title_data,text,color_data):
 @client.event
 async def on_ready():
 #    await tree.sync()
+    goal_check()
     print('ログインしました')
     channel = client.get_channel(CHANNEL_ID)
     await send_status(channel,"ログ","接続を確立しました",0x00ff00)

@@ -3,4 +3,4 @@ __pycache__/
 token.py
 channel.py
 command.py
-*_goal.txt
+*_goal
