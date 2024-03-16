@@ -47,16 +47,17 @@ async def amount_check(command):
     amount[1] = float(amount[1].replace(",",""))
     for i in range(len(bid_goal[command])):
         if amount[0] >= bid_goal[command][i][0]:
-            await bid_goal[command][i][1].channel.send(str(bid_goal[command][i][1].author.mention)+"\n"+"{} の売値が {} 円を上回りました\n現在売値 {} 円".format(command,bid_goal[command][i][0],amount[0]))
-            with open("bid_goal","wb") as f:
-                dill.dump(bid_goal,f)
-            print("dump: OK")
+            await client.get_channel(CHANNEL_ID).send("<@{}>\n{} の売値が {} 円を上回りました\n現在売値 {} 円".format(bid_goal[command][i][1],command,bid_goal[command][i][0],amount[0]))
+#            with open("bid_goal","wb") as f:
+#                dill.dump(bid_goal,f)
+#                dill.dumps(bid_goal)
+#            print("dump: OK")
     for i in range(len(ask_goal[command])):
         if amount[1] <= ask_goal[command][i][0]:
-            await ask_goal[command][i][1].channel.send(str(ask_goal[command][i][1].author.mention)+"\n"+"{} の買値が {} 円を下回りました\n現在買値 {} 円".format(command,ask_goal[command][i][0],amount[1]))
-            with open("ask_goal","wb") as f:
-                dill.dump(ask_goal,f)
-            print("dump: OK")
+            await client.get_channel(CHANNEL_ID).send("<@{}>\n{} の買値が {} 円を下回りました\n現在買値 {} 円".format(ask_goal[command][i][1],command,ask_goal[command][i][0],amount[1]))
+#            with open("ask_goal","wb") as f:
+#                dill.dump(ask_goal,f)
+#            print("dump: OK")
 
 #bid_goal初期化したい
 #ask_goal初期化したい
@@ -65,15 +66,20 @@ async def goal_setting(message,orders):
     orders[2] = float(orders[2])
     if orders[0] == "ask" and command_check("del",orders[1]):
         print("command: /dmm ask")
-        x = [orders[2],message]
+        x = [orders[2],str(message.author.id)]
+#        x = [orders[2],str(message.channel),str(message.author)]
         ask_goal[orders[1]].append(x)
         await message.channel.send("{} の買値が {} 円を下回った場合に通知します".format(orders[1].upper(),orders[2]))
-
+        with open("ask_goal.txt","wb") as f:
+            dill.dump(ask_goal,f)
     elif orders[0] == "bid" and command_check("del",orders[1]):
         print("command: /dmm bid")
-        x = [orders[2],message]
+        x = [orders[2],str(message.author.id)]
+#        x = [orders[2],str(message.channel),star(message.author)]
         bid_goal[orders[1]].append(x)
         await message.channel.send("{} の売値が {} 円を上回った場合に通知します".format(orders[1].upper(),orders[2]))
+        with open("bid_goal.txt","wb") as f:
+            dill.dump(bid_goal,f)
 
     else:
         print("{} は無効な引数です。正しい引数を入力して下さい".format(orders[1]))
