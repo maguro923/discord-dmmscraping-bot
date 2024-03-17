@@ -224,6 +224,8 @@ async def show(message,command):
                 for j in range(len(ask_goal[COMMAND[i]])):
                     x.append([ask_goal[COMMAND[i]][j][0],ask_goal[COMMAND[i]][j][3]])
                 z.append(x)
+        if len(z) == 0:
+            await message.channel.send("通知する買値が設定されていません")
         for i in range(len(z)):
             for j in range(len(z[i])-1):
                 if z[i][j+1][1] == "+":
@@ -240,6 +242,8 @@ async def show(message,command):
                 for j in range(len(bid_goal[COMMAND[i]])):
                     x.append([bid_goal[COMMAND[i]][j][0],bid_goal[COMMAND[i]][j][3]])
                 z.append(x)
+        if len(z) == 0:
+            await message.channel.send("通知する売値が設定されていません")
         for i in range(len(z)):
             for j in range(len(z[i])-1):
                 if z[i][j+1][1] == "+":
