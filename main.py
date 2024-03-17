@@ -28,12 +28,12 @@ for i in range(len(COMMAND)):
 if os.path.isfile("DiscordData/ask_goal"):
     with open("DiscordData/ask_goal","rb") as f:
         ask_goal = dill.load(f)
-        print("load: ask_goal\n",ask_goal,"\n",len(ask_goal["btc"]))
+        print("load: ask_goal\n",ask_goal)
 
 if os.path.isfile("DiscordData/bid_goal"):
     with open("DiscordData/bid_goal","rb") as f:
         bid_goal = dill.load(f)
-        print("load: bid_goal")
+        print("load: bid_goal\n",bid_goal)
 
 async def bot_status():
     channel=client.get_channel(CHANNEL_ID)
@@ -55,39 +55,78 @@ async def amount_check(command):
     amount[0] = float(amount[0].replace(",",""))
     amount[1] = float(amount[1].replace(",",""))
     for i in range(len(bid_goal[command])):
-        if amount[0] >= bid_goal[command][i][0]:
+        if amount[0] >= bid_goal[command][i][0] and bid_goal[command][i][3] == "+":
             bid_goal_channel = client.get_channel(bid_goal[command][i][2])
-            await bid_goal_channel.send("<@{}>\n{} の売値が {} 円を上回りました\n現在売値 {} 円".format(bid_goal[command][i][1],command,bid_goal[command][i][0],amount[0]))
+            print("{} の売値が {} 円を上回りました\n現在の売値 {} 円".format(command,bid_goal[command][i][0],amount[0]))
+            await bid_goal_channel.send("<@{}>\n{} の売値が {} 円を上回りました\n現在の売値 {} 円".format(bid_goal[command][i][1],command,bid_goal[command][i][0],amount[0]))
             del bid_goal[command][i]
+            i-=1
             with open("DiscordData/bid_goal","wb") as f:
                 dill.dump(bid_goal,f)
-#            print("dump: OK")
+        
+        if amount[0] <= bid_goal[command][i][0] and bid_goal[command][i][3] == "-":
+            bid_goal_channel = client.get_channel(bid_goal[command][i][2])
+            print("{} の売値が {} 円を下回りました\n現在の売値 {} 円".format(command,bid_goal[command][i][0],amount[0]))
+            await bid_goal_channel.send("<@{}>\n{} の売値が {} 円を下回りました\n現在の売値 {} 円".format(bid_goal[command][i][1],command,bid_goal[command][i][0],amount[0]))
+            del bid_goal[command][i]
+            i-=1
+            with open("DiscordData/bid_goal","wb") as f:
+                dill.dump(bid_goal,f)
+
     for i in range(len(ask_goal[command])):
-        if amount[1] <= ask_goal[command][i][0]:
+        if amount[1] >= ask_goal[command][i][0] and ask_goal[command][i][3] == "+":
             ask_goal_channel = client.get_channel(ask_goal[command][i][2])
-            await ask_goal_channel.send("<@{}>\n{} の買値が {} 円を下回りました\n現在買値 {} 円".format(ask_goal[command][i][1],command,ask_goal[command][i][0],amount[1]))
+            print("{} の買値が {} 円を上回りました\n現在の買値 {} 円".format(command,ask_goal[command][i][0],amount[1]))
+            await ask_goal_channel.send("<@{}>\n{} の買値が {} 円を上回りました\n現在の買値 {} 円".format(ask_goal[command][i][1],command,ask_goal[command][i][0],amount[1]))
             del ask_goal[command][i]
+            i-=1
             with open("DiscordData/ask_goal","wb") as f:
                 dill.dump(ask_goal,f)
-#            print("dump: OK")
 
-#bid_goal初期化したい
-#ask_goal初期化したい
+        if amount[1] <= ask_goal[command][i][0] and ask_goal[command][i][3] == "-":
+            ask_goal_channel = client.get_channel(ask_goal[command][i][2])
+            print("{} の買値が {} 円を下回りました\n現在の買値 {} 円".format(command,ask_goal[command][i][0],amount[1]))
+            await ask_goal_channel.send("<@{}>\n{} の買値が {} 円を下回りました\n現在の買値 {} 円".format(ask_goal[command][i][1],command,ask_goal[command][i][0],amount[1]))
+            del ask_goal[command][i]
+            i-=1
+            with open("DiscordData/ask_goal","wb") as f:
+                dill.dump(ask_goal,f)
 
 async def goal_setting(message,orders):
     orders[2] = float(orders[2])
-    if orders[0] == "ask" and command_check("del",orders[1]):
-        print("command: /dmm ask")
-        x = [orders[2],str(message.author.id),int(message.channel.id)]
+    if orders[0] == "ask" and orders[3] == "+" and command_check("del",orders[1]):
+        print("command: /ask")
+        x = [orders[2],str(message.author.id),int(message.channel.id),orders[3]]
         ask_goal[orders[1]].append(x)
+        print("{} の買値が {} 円を上回った場合に通知します".format(orders[1].upper(),orders[2]))
+        await message.channel.send("{} の買値が {} 円を上回った場合に通知します".format(orders[1].upper(),orders[2]))
+        with open("DiscordData/ask_goal","wb") as f:
+            dill.dump(ask_goal,f)
+
+    elif orders[0] == "ask" and orders[3] == "-" and command_check("del",orders[1]):
+        print("command: /ask")
+        x = [orders[2],str(message.author.id),int(message.channel.id),orders[3]]
+        ask_goal[orders[1]].append(x)
+        print("{} の買値が {} 円を下回った場合に通知します".format(orders[1].upper(),orders[2]))
         await message.channel.send("{} の買値が {} 円を下回った場合に通知します".format(orders[1].upper(),orders[2]))
         with open("DiscordData/ask_goal","wb") as f:
             dill.dump(ask_goal,f)
-    elif orders[0] == "bid" and command_check("del",orders[1]):
-        print("command: /dmm bid")
-        x = [orders[2],str(message.author.id),int(message.channel.id)]
+            
+    elif orders[0] == "bid" and orders[3] == "+" and command_check("del",orders[1]):
+        print("command: /bid")
+        x = [orders[2],str(message.author.id),int(message.channel.id),orders[3]]
         bid_goal[orders[1]].append(x)
+        print("{} の売値が {} 円を上回った場合に通知します".format(orders[1].upper(),orders[2]))
         await message.channel.send("{} の売値が {} 円を上回った場合に通知します".format(orders[1].upper(),orders[2]))
+        with open("DiscordData/bid_goal","wb") as f:
+            dill.dump(bid_goal,f)
+
+    elif orders[0] == "bid" and orders[3] == "-" and command_check("del",orders[1]):
+        print("command: /bid")
+        x = [orders[2],str(message.author.id),int(message.channel.id),orders[3]]
+        bid_goal[orders[1]].append(x)
+        print("{} の売値が {} 円を下回った場合に通知します".format(orders[1].upper(),orders[2]))
+        await message.channel.send("{} の売値が {} 円を下回った場合に通知します".format(orders[1].upper(),orders[2]))
         with open("DiscordData/bid_goal","wb") as f:
             dill.dump(bid_goal,f)
 
@@ -146,6 +185,12 @@ async def command_reload(message,action,name):
         new_command.append(name)
         await command_write(new_command)
         await message.channel.send("{} を追加しました".format(name))
+        ask_goal[name] = []
+        with open("DiscordData/ask_goal","wb") as f:
+            dill.dump(ask_goal,f)
+        bid_goal[name] = []
+        with open("DiscordData/bid_goal","wb") as f:
+            dill.dump(bid_goal,f)
         print("再起動します...")
         await send_status(message.channel,"ログ","Botを切断しました\n再起動しています...",0xff0000)
         os.execv(sys.executable, ['python'] + sys.argv)
@@ -154,11 +199,54 @@ async def command_reload(message,action,name):
         new_command.remove(name)
         await command_write(new_command)
         await message.channel.send("{} を削除しました".format(name))
+        del ask_goal[name]
+        with open("DiscordData/ask_goal","wb") as f:
+            dill.dump(ask_goal,f)
+        del bid_goal[name]
+        with open("DiscordData/bid_goal","wb") as f:
+            dill.dump(bid_goal,f)
         print("再起動します...")
         await send_status(message.channel,"ログ","Botを切断しました\n再起動しています...",0xff0000)
         os.execv(sys.executable, ['python'] + sys.argv)
 
-#async def command_show(message):
+async def show(message,command):
+    if command == "command":
+        print("command: show command")
+        x = "\n".join(COMMAND)
+        y = ",".join(command_list)
+        await message.channel.send("現在有効化されたコマンドは\n"+x+"\nコマンド一覧は\n"+y)
+    elif command == "ask":
+        print("command: show ask")
+        z = []
+        for i in range(len(COMMAND)):
+            if len(ask_goal[COMMAND[i]]):
+                x = [COMMAND[i]]
+                for j in range(len(ask_goal[COMMAND[i]])):
+                    x.append([ask_goal[COMMAND[i]][j][0],ask_goal[COMMAND[i]][j][3]])
+                z.append(x)
+        for i in range(len(z)):
+            for j in range(len(z[i])-1):
+                if z[i][j+1][1] == "+":
+                    await message.channel.send("{} の買値が {} 円を上回った場合に通知します".format(z[i][0].upper(),z[i][j+1][0]))
+                elif z[i][j+1][1] == "-":
+                    await message.channel.send("{} の買値が {} 円を下回った場合に通知します".format(z[i][0].upper(),z[i][j+1][0]))
+
+    elif command == "bid":
+        print("command: show bid")
+        z = []
+        for i in range(len(COMMAND)):
+            if len(bid_goal[COMMAND[i]]):
+                x = [COMMAND[i]]
+                for j in range(len(bid_goal[COMMAND[i]])):
+                    x.append([bid_goal[COMMAND[i]][j][0],bid_goal[COMMAND[i]][j][3]])
+                z.append(x)
+        for i in range(len(z)):
+            for j in range(len(z[i])-1):
+                if z[i][j+1][1] == "+":
+                    await message.channel.send("{} の売値が {} 円を上回った場合に通知します".format(z[i][0].upper(),z[i][j+1][0]))
+                elif z[i][j+1][1] == "-":
+                    await message.channel.send("{} の売値が {} 円を下回った場合に通知します".format(z[i][0].upper(),z[i][j+1][0]))
+
 
 def res_get(path):
     res = open(path)
@@ -184,26 +272,25 @@ async def dmm_selenium(message):
             print("command: {} OK".format(message.content))
 
 async def dmm_order(message,orders):
-
-    if orders[0] == "ask" and not len(orders) == 3:
+    if orders[0] == "ask" and not len(orders) == 4:
         #引数の数が正しくない
-        print("”/ask” の引数は add 対象 目標買値 です")
-        await message.channel.send("”/ask” の引数は ask 対象 目標買値 です")
+        print("”/ask” の引数は add 対象 目標買値 '+'or'-' です")
+        await message.channel.send("”/ask” の引数は ask 対象 目標買値 '+'or'-' です")
 
-    elif orders[0] == "bid" and not len(orders) == 3:
+    elif orders[0] == "bid" and not len(orders) == 4:
         #引数の数が正しくない
-        print("”/bid” の引数は bid 対象 目標売値 です")
-        await message.channel.send("”/bid” の引数は bid 対象 目標売値 です")
+        print("”/bid” の引数は bid 対象 目標売値 '+'or'-' です")
+        await message.channel.send("”/bid” の引数は bid 対象 目標売値 '+'or'-' です")
 
-    elif (orders[0]=="ask" or orders[0]=="bid") and not isfloat(orders[2]):
+    elif ((orders[0]=="ask" or orders[0]=="bid") and not isfloat(orders[2])) or (not orders[3] == "+" and not orders[3] == "-"):
         print("引数の型が間違っています")
         await message.channel.send("引数の型が間違っています")
 
-    elif orders[0] == "ask" and len(orders) == 3:
+    elif orders[0] == "ask" and len(orders) == 4:
         #目標買値設定
         await goal_setting(message,orders)
 
-    elif orders[0] == "bid" and len(orders):
+    elif orders[0] == "bid" and len(orders) == 4:
         #目標売値設定
         await goal_setting(message,orders)
 
@@ -251,19 +338,16 @@ async def on_message(message):
     elif message.content == "/kill-process":
         await send_status(message.channel,"ログ","Botを切断しました",0xff0000)
         exit()
+    elif str(message.content).startswith("/add ") or str(message.content).startswith("/del "):
+        x = str(message.content).split(" ")
+        await command_reload(message,x[0].lstrip("/"),x[1])
+    elif str(message.content).startswith("/show "):
+        x = str(message.content).split(" ")
+        await show(message,x[1])
     elif str(message.content).startswith("/"):
         sended_text = str(message.content).removeprefix("/").split()
         await dmm_order(message,sended_text)
-    if str(message.content).startswith("/add ") or str(message.content).startswith("/del "):
-        x = str(message.content).split(" ")
-        await command_reload(message,x[0].lstrip("/"),x[1])
-    elif message.content == "/show-command":
-#        await command_show(message)
-        x = "\n".join(COMMAND)
-        y = ",".join(command_list)
-        await message.channel.send("現在有効化されたコマンドは\n"+x+"\nコマンド一覧は\n"+y)
     else:
         asyncio.ensure_future(dmm_selenium(message))
-
 client.run(TOKEN)
 
